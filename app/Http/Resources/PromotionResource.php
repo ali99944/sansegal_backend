@@ -1,0 +1,25 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class PromotionResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'text' => $this->text,
+            'bgColor' => $this->bg_color,
+            'textColor' => $this->text_color,
+            'isActive' => $this->is_active,
+        ];
+    }
+}
