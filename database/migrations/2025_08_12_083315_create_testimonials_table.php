@@ -17,8 +17,12 @@ return new class extends Migration
             $table->string('location')->nullable(); // Location might be optional
             $table->text('review');
             // We link to the products table. If a product is deleted, the testimonial is set to NULL.
-            $table->foreignId('product_id')->nullable()->constrained()->onDelete('set null');
-            $table->string('product_name')->after('review');
+            $table->unsignedBigInteger('product_id')->nullable();
+            $table->foreign('product_id')
+                  ->references('id')
+                  ->on('products')
+                  ->onDelete('set null');
+            $table->string('product_name');
             $table->boolean('is_visible')->default(true); // To control visibility on the frontend
             $table->timestamps();
         });
