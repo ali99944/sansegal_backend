@@ -14,17 +14,19 @@ class CartItem extends Model
         'guest_cart_token',
         'product_id',
         'quantity',
-        // 'price_at_add',
-        // 'addons_data',
+
     ];
 
     protected $casts = [
-        'quantity' => 'integer',
-        // 'price_at_add' => 'decimal:2',
-        // 'addons_data' => 'array',
+        'quantity' => 'integer'
     ];
 
     public function product(): BelongsTo {
         return $this->belongsTo(Product::class);
+    }
+
+    public function scopeGuest($query, ?string $guestToken)
+    {
+        return $query->where('guest_cart_token', $guestToken);
     }
 }

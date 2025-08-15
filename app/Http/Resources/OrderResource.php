@@ -16,25 +16,27 @@ class OrderResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'orderCode' => $this->order_code,
+            'id' => $this->id,
+            'order_code' => $this->order_code,
             'status' => $this->status,
-            'orderDate' => $this->created_at->toDateTimeString(),
+            'order_date' => $this->created_at->toDateTimeString(),
             'customer' => [
-                'firstName' => $this->first_name,
-                'lastName' => $this->last_name,
+                'first_name' => $this->first_name,
+                'last_name' => $this->last_name,
                 'email' => $this->email,
+                'phone' => $this->phone
             ],
-            'shippingAddress' => [
+            'shipping_address' => [
                 'address' => $this->address,
                 'city' => $this->city,
-                'specialMark' => $this->special_mark,
+                'special_mark' => $this->special_mark,
             ],
             'financials' => [
                 'subtotal' => (float) $this->subtotal,
                 'shipping' => (float) $this->shipping_cost,
                 'tax' => (float) $this->tax_amount,
-                'promoDiscount' => (float) $this->promo_discount,
-                'grandTotal' => (float) $this->grand_total,
+                'promo_discount' => (float) $this->promo_discount,
+                'grand_total' => (float) $this->grand_total,
             ],
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
         ];

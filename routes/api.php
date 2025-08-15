@@ -11,6 +11,7 @@ use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FaqCategoryController;
 use App\Http\Controllers\FaqController;
+use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SettingsController;
@@ -108,3 +109,10 @@ Route::prefix('statistics')->group(function () {
 */
 Route::get('/settings', [SettingsController::class, 'index']);
 Route::post('/settings', [SettingsController::class, 'store']);
+
+
+// Public route to fetch a policy by its slug
+Route::get('/policies/by-slug/{slug}', [PolicyController::class, 'showBySlug']);
+
+// Control Panel routes (no create/delete, only index/show/update)
+Route::apiResource('policies', PolicyController::class)->except(['store', 'destroy']);

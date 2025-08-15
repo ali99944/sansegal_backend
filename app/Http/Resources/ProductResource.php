@@ -24,7 +24,7 @@ class ProductResource extends JsonResource
                 'en' => $this->en_description,
                 'ar' => $this->ar_description,
             ],
-            'image' => $this->image,
+            'image' => $this->image ? url('storage/' . $this->image) : null,
             'price' => $this->original_price,
             'discount' => $this->discount,
             'discountType' => $this->discount_type,

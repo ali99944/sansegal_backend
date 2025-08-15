@@ -54,7 +54,7 @@ class ProductController extends Controller
                 'original_price' => $validated['original_price'],
                 'discount' => $validated['discount'] ?? null,
                 'discount_type' => $validated['discount_type'] ?? null,
-                'specifications' => $validated['specifications'],
+                'specifications' => json_decode($validated['specifications']),
             ]);
 
             // $product->variants()->create([

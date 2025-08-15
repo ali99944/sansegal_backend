@@ -15,7 +15,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             ManagerSeeder::class,
-            SeoSeeder::class
+            SeoSeeder::class,
+            PolicySeeder::class
         ]);
     }
 }

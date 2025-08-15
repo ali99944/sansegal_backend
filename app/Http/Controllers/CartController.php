@@ -14,41 +14,28 @@ use Illuminate\Support\Str; // For random generation
 
 class CartController extends Controller
 {
-    // Helper to get authenticated customer or guest token
-    private function getUserOrGuestIdentifier(Request $request): array
-    {
-        $guestToken = $request->header('X-Cart-Token');
-
-        // Check for authenticated customer first (assuming Sanctum)
-        $customer = $request->bearerToken() ? $request->user() : null; // Use your Sanctum guard name for customers
-
-        return ['customer' => $customer, 'guestToken' => $guestToken];
-    }
 
     /**
      * Display the user's or guest's cart items.
      */
     public function index(Request $request)
     {
-        ['customer' => $customer, 'guestToken' => $guestToken] = $this->getUserOrGuestIdentifier($request);
+        $guestToken = $request->header('X-Cart-Token');
 
-        if (!$customer && !$guestToken) {
-            // Return empty cart if no identifier provided
+        if (!$guestToken) {
             return response()->json(['data' => [], 'guest_cart_token' => null, 'total' => 0.00]);
-            // Or return 401/403 if identification is always required to view any cart
-            // return response()->json(['message' => 'Cart identifier missing.'], 401);
         }
 
         $cartItems = CartItem::with('product')
-                            ->forUserOrGuest($customer, $guestToken)
+                            ->guest($guestToken)
                             ->get();
 
         $total = $cartItems->sum(function ($item) {
-             return round(($item->product->sell_price ?? 0) * $item->quantity, 2);
+             return round(($item->product->original_price ?? 0) * $item->quantity, 2);
         });
 
         return response()->json([
-             'data' => $cartItems,
+             'data' => CartItemResource::collection($cartItems),
              'guest_cart_token' => $guestToken, // Return token so frontend can store it
              'total' => round($total, 2)
         ]);
@@ -73,28 +60,11 @@ class CartController extends Controller
         $productId = $validated['product_id'];
         $quantity = $validated['quantity'];
 
-        $product = Product::find($productId);
-
-        // --- Check Product Status & Stock ---
-        // if (!$product || !$product->is_public || $product->status !== Product::STATUS_ACTIVE) {
-        //     return response()->json(['message' => 'Product is not available.'], 404);
-        // }
-        if ($product->stock < $quantity) {
-            return response()->json(['message' => 'Insufficient stock available.', 'available_stock' => $product->stock], 400);
-        }
-
-        ['customer' => $customer, 'guestToken' => $guestToken] = $this->getUserOrGuestIdentifier($request);
-
-        $newGuestToken = null;
-        if (!$customer && !$guestToken) {
-            // Generate a new token for a new guest cart
-            $guestToken = (string) Str::random();
-            $newGuestToken = $guestToken; // Flag to return the new token
-        }
+        $guestToken = $request->header('X-Cart-Token');
 
         // --- Find or Create Cart Item ---
         $cartItem = CartItem::query()
-            ->forUserOrGuest($customer, $guestToken)
+            ->guest($guestToken)
             ->where('product_id', $productId)
             // Add addon checks here if necessary to treat items with different addons as distinct
             ->first();
@@ -102,37 +72,20 @@ class CartController extends Controller
         if ($cartItem) {
             // Item exists, update quantity
             $newQuantity = $cartItem->quantity + $quantity;
-             if ($product->stock < $newQuantity) {
-                return response()->json(['message' => 'Insufficient stock to add requested quantity.', 'available_stock' => $product->stock - $cartItem->quantity], 400);
-            }
+
             $cartItem->quantity = $newQuantity;
             $cartItem->save();
         } else {
             // Item doesn't exist, create new entry
             $cartItemData = [
                 'product_id' => $productId,
-                'quantity' => $quantity,
-                // 'addons_data' => $validated['addons_data'] ?? null,
-                // 'price_at_add' => $product->sell_price, // Store price if needed
+                'quantity' => $quantity
             ];
-            if ($customer) {
-                $cartItemData['customer_id'] = $customer->id;
-            } else {
-                $cartItemData['guest_cart_token'] = $guestToken;
-            }
+            $cartItemData['guest_cart_token'] = $guestToken;
             $cartItem = CartItem::create($cartItemData);
         }
 
-        // --- Return Response ---
-        // Optionally reload the entire cart or just return the added/updated item
-        // Reloading cart provides updated total
         return $this->index($request)->setStatusCode(201); // Use 201 for successful creation/addition
-         // Or return just the item:
-        // return response()->json([
-        //     'message' => 'Item added to cart.',
-        //     'item' => new CartItemResource($cartItem->load('product')),
-        //     'guest_cart_token' => $newGuestToken // Only send if newly generated
-        // ], 201);
     }
 
     /**
@@ -149,10 +102,10 @@ class CartController extends Controller
         }
 
         $quantity = $request->input('quantity');
-        ['customer' => $customer, 'guestToken' => $guestToken] = $this->getUserOrGuestIdentifier($request);
+        $guestToken = $request->header('X-Cart-Token');
 
         $cartItem = CartItem::query()
-            ->forUserOrGuest($customer, $guestToken)
+            ->guest( $guestToken)
             ->find($cartItemId);
 
         if (!$cartItem) {
@@ -165,18 +118,11 @@ class CartController extends Controller
              return response()->json(['message' => 'Associated product not found.'], 404);
         }
 
-        // Check stock
-        if ($product->stock < $quantity) {
-             return response()->json(['message' => 'Insufficient stock available.', 'available_stock' => $product->stock], 400);
-        }
-
         $cartItem->quantity = $quantity;
         $cartItem->save();
 
          // Return updated cart
         return $this->index($request);
-         // Or return just the item
-         // return new CartItemResource($cartItem->load('product'));
     }
 
     /**
@@ -184,10 +130,10 @@ class CartController extends Controller
      */
     public function destroy(Request $request, $cartItemId)
     {
-        ['customer' => $customer, 'guestToken' => $guestToken] = $this->getUserOrGuestIdentifier($request);
+        $guestToken = $request->header('X-Cart-Token');
 
         $cartItem = CartItem::query()
-            ->forUserOrGuest($customer, $guestToken)
+            ->guest($guestToken)
             ->find($cartItemId);
 
         if (!$cartItem) {
@@ -206,72 +152,16 @@ class CartController extends Controller
      */
     public function clear(Request $request)
     {
-         ['customer' => $customer, 'guestToken' => $guestToken] = $this->getUserOrGuestIdentifier($request);
+        $guestToken = $request->header('X-Cart-Token');
 
-         if (!$customer && !$guestToken) {
-             return response()->json(['message' => 'Cart identifier missing.'], 401);
+         if (!$guestToken) {
+             return response()->json(['message' => 'Cart token missing.'], 401);
          }
 
          CartItem::query()
-            ->forUserOrGuest($customer, $guestToken)
+            ->guest( $guestToken)
             ->delete();
 
         return response()->json(['data' => [], 'guest_cart_token' => $guestToken, 'total' => 0.00]);
-        // return response()->json(null, 204);
     }
-
-     /**
-      * Associate a guest cart with a logged-in customer.
-      * This should ideally be called *after* successful login.
-      */
-     public function mergeGuestCart(Request $request)
-     {
-         // Customer MUST be authenticated here
-         $customer = $request->user();
-         if (!$customer) {
-             return response()->json(['message' => 'Unauthenticated.'], 401);
-         }
-
-         $guestToken = $request->header('X-Cart-Token');
-         if (!$guestToken) {
-             return response()->json(['message' => 'Guest cart token missing.'], 400);
-         }
-
-         // Find guest cart items
-         $guestItems = CartItem::where('guest_cart_token', $guestToken)
-                               ->whereNull('customer_id')
-                               ->get();
-
-         if ($guestItems->isEmpty()) {
-             return response()->json(['message' => 'No guest cart found or cart is empty.'], 200);
-         }
-
-         foreach ($guestItems as $guestItem) {
-             // Check if the same product already exists in the customer's cart
-             $customerItem = CartItem::where('customer_id', $customer->id)
-                                     ->where('product_id', $guestItem->product_id)
-                                     // Add addon checks if needed
-                                     ->first();
-
-             if ($customerItem) {
-                 // Merge quantities (check stock)
-                 $product = $guestItem->product; // Assuming product exists
-                 $newQuantity = $customerItem->quantity + $guestItem->quantity;
-                 if ($product && $product->stock >= $newQuantity) {
-                     $customerItem->quantity = $newQuantity;
-                     $customerItem->save();
-                 }
-                 // Delete the guest item after merging (or attempting to)
-                 $guestItem->delete();
-             } else {
-                 // Just associate the guest item with the customer
-                 $guestItem->update([
-                     'customer_id' => $customer->id,
-                     'guest_cart_token' => null // Remove guest token association
-                 ]);
-             }
-         }
-
-         return $this->index($request)->setStatusCode(200); // Return the merged cart
-     }
 }

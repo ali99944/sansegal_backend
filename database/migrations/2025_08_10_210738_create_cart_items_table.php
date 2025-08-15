@@ -25,7 +25,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Ensure a cart item belongs to either a customer or a guest token
-            $table->unique(['product_id']);
+            $table->unique(['product_id', 'guest_cart_token']);
         });
     }
 

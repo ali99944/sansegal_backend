@@ -9,10 +9,12 @@ class ManagerSeeder extends Seeder
 {
     public function run(): void
     {
-        Manager::create([
-            'name' => 'Admin',
-            'email' => 'admin@sansegal.com',
-            'password' => Hash::make('password'), // Use a secure password in production!
-        ]);
+        if (!Manager::where('email', 'admin@sansegal.com')->exists()) {
+            Manager::create([
+                'name' => 'Admin',
+                'email' => 'admin@sansegal.com',
+                'password' => Hash::make('password'), // Use a secure password in production!
+            ]);
+        }
     }
 }

@@ -35,16 +35,16 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'firstName' => 'required|string|max:255',
-            'lastName' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
-            'secondaryPhone' => 'nullable|string|max:20',
+            'secondary_phone' => 'nullable|string|max:20',
             'address' => 'required|string|max:255',
-            'secondaryAddress' => 'nullable|string|max:255',
+            'secondary_address' => 'nullable|string|max:255',
             'city' => 'required|string|max:100',
-            'specialMark' => 'nullable|string|max:1000',
-            'promoCode' => 'nullable|string',
+            'special_mark' => 'nullable|string|max:1000',
+            'promo_code' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -57,7 +57,7 @@ class OrderController extends Controller
             return response()->json(['message' => 'Cart identifier missing.'], 400);
         }
 
-        $cartItems = CartItem::with('product')->where('guest_cart_token', $cartToken)->get();
+        $cartItems = CartItem::with('product')->guest($cartToken)->get();
 
         if ($cartItems->isEmpty()) {
             return response()->json(['message' => 'Your cart is empty.'], 400);
@@ -76,19 +76,19 @@ class OrderController extends Controller
                 $order = Order::create([
                     'order_code' => 'SG' . strtoupper(Str::random(8)),
                     'status' => 'pending',
-                    'first_name' => $validatedCustomerData['firstName'],
-                    'last_name' => $validatedCustomerData['lastName'],
+                    'first_name' => $validatedCustomerData['first_name'],
+                    'last_name' => $validatedCustomerData['last_name'],
                     'email' => $validatedCustomerData['email'],
                     'phone' => $validatedCustomerData['phone'],
-                    'secondary_phone' => $validatedCustomerData['secondaryPhone'] ?? null,
+                    'secondary_phone' => $validatedCustomerData['secondary_phone'] ?? null,
                     'address' => $validatedCustomerData['address'],
-                    'secondary_address' => $validatedCustomerData['secondaryAddress'] ?? null,
+                    'secondary_address' => $validatedCustomerData['secondary_address'] ?? null,
                     'city' => $validatedCustomerData['city'],
-                    'special_mark' => $validatedCustomerData['specialMark'] ?? null,
+                    'special_mark' => $validatedCustomerData['special_mark'] ?? null,
                     'subtotal' => $subtotal,
                     'shipping_cost' => $shipping,
                     'tax_amount' => $tax,
-                    'promo_code' => $validatedCustomerData['promoCode'] ?? null,
+                    'promo_code' => $validatedCustomerData['promo_code'] ?? null,
                     'promo_discount' => $promoDiscount,
                     'grand_total' => $grandTotal,
                 ]);

@@ -33,7 +33,12 @@ class ContactMessageController extends Controller
             'message' => 'required|string|max:5000',
         ]);
 
-        ContactMessage::create($validated);
+        ContactMessage::create([
+            'full_name' => $validated['full_name'],
+            'email' => $validated['email'],
+            'subject' => $validated['subject'],
+            'message' => $validated['message'],
+        ]);
 
         return response()->json(['message' => 'Your message has been sent successfully!']);
     }
