@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 
@@ -15,4 +16,9 @@ Route::get('/storage/*', function(Request $request) {
         'Access-Control-Allow-Origin' => '*'
     ]);
     // response::
+});
+
+
+Route::get('/foo', function () {
+    Artisan::call('storage:link');
 });
