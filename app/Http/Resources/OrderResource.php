@@ -39,6 +39,7 @@ class OrderResource extends JsonResource
                 'grand_total' => (float) $this->grand_total,
             ],
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
+            'tracking_history' => OrderTrackingResource::collection($this->whenLoaded('trackingHistory')),
         ];
     }
 }

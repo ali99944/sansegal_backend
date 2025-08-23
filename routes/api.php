@@ -11,6 +11,7 @@ use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FaqCategoryController;
 use App\Http\Controllers\FaqController;
+use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\PromoCodeController;
@@ -84,7 +85,7 @@ Route::post('/track-order', [OrderController::class, 'track']);
 
 // Resourceful routes for the control panel (no update functionality needed)
 Route::apiResource('orders', OrderController::class)->except(['update']);
-
+Route::post('/orders/{order}/trackings', [OrderTrackingController::class, 'store']);
 
 /*
 |--------------------------------------------------------------------------

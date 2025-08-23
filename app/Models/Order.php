@@ -19,4 +19,9 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    public function trackingHistory(): HasMany
+    {
+        return $this->hasMany(OrderTracking::class)->orderBy('created_at', 'asc');
+    }
 }

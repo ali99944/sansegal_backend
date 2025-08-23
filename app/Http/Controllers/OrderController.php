@@ -29,7 +29,7 @@ class OrderController extends Controller
     {
         // Fetch the latest orders and paginate them
         // $orders = Order::latest()->paginate(15);
-        $orders = Order::all();
+        $orders = Order::with('items', 'trackingHistory')->get();
         return OrderResource::collection($orders);
     }
 
@@ -137,6 +137,12 @@ class OrderController extends Controller
             $settingsService = new SettingsService(); // Instantiate your service
             Mail::to($order->email)->send(new OrderConfirmedMail($order, $settingsService));
 
+            $order->trackingHistory()->create([
+                'status' => 'pending',
+                'description' => 'Order placed successfully!',
+                'location' => null,
+            ]);
+
             return response()->json([
                 'message' => 'Order placed successfully!',
                 'order_code' => $order->order_code,
@@ -156,7 +162,7 @@ class OrderController extends Controller
     public function show(Order $order)
     {
         // Eager load the items relationship to include all order items
-        return new OrderResource($order->load('items'));
+        return new OrderResource($order->load('items', 'trackingHistory'));
     }
 
     /**
@@ -194,7 +200,7 @@ class OrderController extends Controller
                           ->where('email', $validated['email'])
                           ->firstOrFail();
 
-            return new OrderResource($order->load('items'));
+            return new OrderResource($order->load('items', 'trackingHistory'));
 
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Order not found or email does not match the order record.'], 404);
