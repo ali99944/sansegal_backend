@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductResource;
 use App\Models\AppModel;
 use App\Models\Product;
+use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,7 @@ class ProductController extends Controller
     {
         // Eager load relationships for efficiency
         // $products = Product::with(['variants', 'models'])->latest()->paginate(10);
-        $products = Product::with(['variants', 'models'])->latest()->get();
+        $products = Product::with(['variants', 'models', 'images'])->latest()->get();
         return ProductResource::collection($products);
     }
 
@@ -33,9 +34,11 @@ class ProductController extends Controller
             'original_price' => 'required|numeric',
             'discount' => 'nullable|numeric',
             'discount_type' => 'nullable|in:percentage,fixed',
-            'specifications' => 'required|json',
-            // 'initial_variant_color' => 'required|string|max:255',
-            // 'initial_variant_image' => 'required|image|max:2048',
+            'specifications' => 'nullable|array',
+            'specifications.*.key' => 'required_with:specifications.*.value|string|max:255',
+            'specifications.*.value' => 'required_with:specifications.*.key|string|max:255',
+            'gallery_images' => 'nullable|array',
+            'gallery_images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048'
         ]);
 
         Log::info($validated);
@@ -54,23 +57,40 @@ class ProductController extends Controller
                 'original_price' => $validated['original_price'],
                 'discount' => $validated['discount'] ?? null,
                 'discount_type' => $validated['discount_type'] ?? null,
-                'specifications' => json_decode($validated['specifications']),
             ]);
 
-            // $product->variants()->create([
-            //     'color' => $validated['initial_variant_color'],
-            //     'image' => $variantImagePath,
-            // ]);
+            if (!empty($validated['specifications'])) {
+                foreach ($validated['specifications'] as $spec) {
+                    // Ensure both key and value exist before creating
+                    if (!empty($spec['key']) && !empty($spec['value'])) {
+                        $product->specifications()->create([
+                            'spec_key' => $spec['key'],
+                            'spec_value' => $spec['value'],
+                        ]);
+                    }
+                }
+            }
 
             return $product;
         });
 
-        return new ProductResource($product->load(['variants', 'models']));
+
+        if ($request->hasFile('gallery_images')) {
+            foreach ($request->file('gallery_images') as $index => $file) {
+                $path = $file->store('products/gallery', 'public');
+                $product->images()->create([
+                    'image_path' => $path,
+                    'position' => $index,
+                ]);
+            }
+        }
+
+        return new ProductResource($product->load(['variants', 'models', 'images', 'specifications']));
     }
 
     public function show(Product $product)
     {
-        return new ProductResource($product->load(['variants', 'models']));
+        return new ProductResource($product->load(['variants', 'models', 'images', 'specifications']));
     }
 
     /**
@@ -87,7 +107,11 @@ class ProductController extends Controller
             'original_price' => 'sometimes|required|numeric|min:0',
             'discount' => 'nullable|numeric',
             'discount_type' => 'nullable|in:percentage,fixed',
-            'specifications' => 'sometimes|required|json',
+            'specifications' => 'nullable|array',
+            'specifications.*.key' => 'required_with:specifications.*.value|string|max:255',
+            'specifications.*.value' => 'required_with:specifications.*.key|string|max:255',
+            'gallery_images' => 'nullable|array',
+            'gallery_images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048'
         ]);
 
         if ($request->hasFile('image')) {
@@ -98,6 +122,30 @@ class ProductController extends Controller
         }
 
         $product->update($validated);
+
+        $product->specifications()->delete();
+
+        if (!empty($validated['specifications'])) {
+            foreach ($validated['specifications'] as $spec) {
+                if (!empty($spec['key']) && !empty($spec['value'])) {
+                    $product->specifications()->create([
+                        'spec_key' => $spec['key'],
+                        'spec_value' => $spec['value'],
+                    ]);
+                }
+            }
+        }
+
+        // Handle newly added images
+        if ($request->hasFile('gallery_images')) {
+            foreach ($request->file('gallery_images') as $index => $file) {
+                $path = $file->store('products/gallery', 'public');
+                $product->images()->create([
+                    'image_path' => $path,
+                    'position' => $index + $product->images()->count(), // Append to the end
+                ]);
+            }
+        }
 
         return new ProductResource($product->load(['variants', 'models']));
     }
@@ -139,5 +187,43 @@ class ProductController extends Controller
     {
         $product->models()->detach($appModel->id);
         return response(null, Response::HTTP_NO_CONTENT);
+    }
+
+
+    /**
+     * Fetch products that may be of interest to a customer viewing a specific product.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\Product $product The product currently being viewed.
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     */
+    public function relatedProducts(Request $request, Product $product)
+    {
+        // 1. Define the number of products to return (can be customized via query param)
+        $limit = (int) $request->query('limit', 4);
+
+        // 2. Get the values of the current product's specifications
+        $currentSpecValues = $product->specifications()->pluck('spec_value');
+
+        // 3. Build the query to find related products
+        $relatedProducts = Product::query()
+            // Exclude the current product from the results
+            ->where('id', '!=', $product->id)
+            // Eager load relationships to avoid N+1 query problems
+            ->with(['images', 'specifications'])
+            // Create a "relevance_score" based on how many specifications are shared
+            ->withCount(['specifications as relevance_score' => function ($query) use ($currentSpecValues) {
+                $query->whereIn('spec_value', $currentSpecValues);
+            }])
+            // Prioritize products with a higher relevance score
+            ->orderByDesc('relevance_score')
+            // Randomize the order for products with the same score to keep it fresh
+            ->inRandomOrder()
+            // Limit the number of results
+            ->limit($limit)
+            ->get();
+
+        // 4. Return the results using the consistent ProductResource
+        return ProductResource::collection($relatedProducts);
     }
 }

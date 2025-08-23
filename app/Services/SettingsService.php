@@ -86,7 +86,7 @@ class SettingsService
     public function getAllSettings(): array
     {
         $allSettings = [];
-        $settingFiles = ['general', 'contact', 'social']; // Define your setting groups
+        $settingFiles = ['general', 'contact', 'social', 'store'];
 
         foreach ($settingFiles as $fileKey) {
             $allSettings[$fileKey] = $this->loadSettingsFile($fileKey);

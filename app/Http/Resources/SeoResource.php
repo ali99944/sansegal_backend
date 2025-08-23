@@ -14,12 +14,12 @@ class SeoResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'keywords' => $this->keywords,
-            'canonicalUrl' => $this->canonical_url,
-            'ogTitle' => $this->og_title,
-            'ogDescription' => $this->og_description,
-            'ogImage' => $this->og_image,
-            'ogType' => $this->og_type,
-            'structuredData' => $this->structured_data,
+            'canonical_url' => $this->canonical_url,
+            'og_title' => $this->og_title,
+            'og_description' => $this->og_description,
+            'og_image' => $this->og_image,
+            'og_type' => $this->og_type,
+            'structured_data' => $this->structured_data,
         ];
     }
 }

@@ -20,17 +20,40 @@ class SeoSeeder extends Seeder
         ]);
 
         Seo::create([
-            'key' => 'products',
-            'title' => 'مجموعة المنتجات | San Segal',
-            'description' => 'تصفح جميع حقائبنا الجلدية المصنوعة يدويًا. ابحث عن الحقيبة المثالية التي تناسب أسلوبك الفريد.',
-        ]);
-
-        Seo::create([
             'key' => 'contact',
             'title' => 'تواصل معنا | San Segal',
             'description' => 'هل لديك أي استفسارات؟ تواصل مع فريق خدمة عملاء San Segal. نحن هنا لمساعدتك.',
         ]);
 
-        // Add more pages as needed...
+        Seo::create([
+            'key' => 'about',
+            'title' => 'عن San Segal | San Segal',
+            'description' => 'تعرف علىSan Segal وكيف يمكننا مساعدتك في اختيار الحقيبة المناسبة لك.',
+        ]);
+
+        Seo::create([
+            'key' => 'cart',
+            'title' => 'عربة التسوق | San Segal',
+            'description' => 'مشاهدة تفاصيل عربة التسوق الخاصة بك.',
+        ]);
+
+
+        Seo::create([
+            'key' => 'checkout',
+            'title' => 'إتمام الطلب | San Segal',
+            'description' => 'أكمل عملية الشراء بسهولة وأمان مع San Segal.',
+        ]);
+
+        Seo::create([
+            'key' => 'faq',
+            'title' => 'الأسئلة الشائعة | San Segal',
+            'description' => 'اعثر على إجابات لأكثر الأسئلة شيوعًا حول منتجات وخدمات San Segal.',
+        ]);
+
+        Seo::create([
+            'key' => 'track-order',
+            'title' => 'تتبع طلبك | San Segal',
+            'description' => 'تتبع حالة طلبك بسهولة مع San Segal. ادخل رقم طلبك للحصول على آخر التحديثات.',
+        ]);
     }
 }

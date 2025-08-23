@@ -25,10 +25,11 @@ class ProductResource extends JsonResource
                 'ar' => $this->ar_description,
             ],
             'image' => $this->image ? url('storage/' . $this->image) : null,
+            'images' => ProductImageResource::collection($this->whenLoaded('images')),
             'price' => $this->original_price,
             'discount' => $this->discount,
-            'discountType' => $this->discount_type,
-            'specifications' => $this->specifications,
+            'discount_type' => $this->discount_type,
+            'specifications' => ProductSpecificationResource::collection($this->whenLoaded('specifications')),
             'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
             'models' => AppModelResource::collection($this->whenLoaded('models')),
         ];

@@ -50,6 +50,8 @@ class SettingsController extends Controller
             'social.twitter_url' => 'nullable|url',
             'social.pinterest_url' => 'nullable|url',
             'social.tiktok_url' => 'nullable|url',
+
+            'store.enable_promo_codes' => 'required|boolean'
         ]);
 
         if ($validator->fails()) {

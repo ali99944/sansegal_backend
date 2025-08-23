@@ -13,6 +13,7 @@ use App\Http\Controllers\FaqCategoryController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\ProductVariantController;
+use App\Http\Controllers\PromoCodeController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StatisticsController;
@@ -41,6 +42,9 @@ Route::apiResource('models', AppModelController::class);
 // Routes to manage the many-to-many relationship between products and models
 Route::post('products/{product}/models/{appModel}', [ProductController::class, 'attachModel']);
 Route::delete('products/{product}/models/{appModel}', [ProductController::class, 'detachModel']);
+
+// This route uses route model binding to automatically fetch the product by its ID.
+Route::get('/products/{product}/related', [ProductController::class, 'relatedProducts']);
 
 Route::apiResource('variants', ProductVariantController::class)->only(['store', 'update', 'destroy']);
 Route::apiResource('testimonials', TestimonialController::class);
@@ -116,3 +120,7 @@ Route::get('/policies/by-slug/{slug}', [PolicyController::class, 'showBySlug']);
 
 // Control Panel routes (no create/delete, only index/show/update)
 Route::apiResource('policies', PolicyController::class)->except(['store', 'destroy']);
+
+
+Route::apiResource('promo-codes', PromoCodeController::class);
+Route::post('/promo-codes/redeem-code', [PromoCodeController::class, 'getByCode']);

@@ -21,7 +21,6 @@ return new class extends Migration
             $table->decimal('original_price', 8, 2);
             $table->decimal('discount', 8, 2)->nullable();
             $table->enum('discount_type', ['percentage', 'fixed'])->nullable();
-            $table->json('specifications'); // For key-value specs
             $table->timestamps();
         });
     }

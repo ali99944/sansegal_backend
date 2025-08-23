@@ -23,10 +23,6 @@ class Product extends Model
         'specifications',
     ];
 
-    protected $casts = [
-        'specifications' => 'array',
-    ];
-
     public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class);
@@ -39,5 +35,17 @@ class Product extends Model
     public function models(): BelongsToMany
     {
         return $this->belongsToMany(AppModel::class, 'model_product', 'product_id', 'model_id');
+    }
+
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('position');
+    }
+
+
+    public function specifications(): HasMany
+    {
+        return $this->hasMany(ProductSpecification::class);
     }
 }

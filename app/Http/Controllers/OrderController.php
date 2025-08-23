@@ -4,14 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
+use App\Mail\OrderConfirmedMail;
 use App\Models\CartItem;
 use App\Models\Order;
+use App\Models\PromoCode;
+use App\Services\SettingsService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
@@ -67,10 +72,27 @@ class OrderController extends Controller
             $order = DB::transaction(function () use ($cartItems, $validatedCustomerData, $cartToken) {
                 // Recalculate Totals on Backend
                 $subtotal = $cartItems->sum(fn($item) => $item->product->original_price * $item->quantity);
-                $shipping = $subtotal > 200 ? 0 : 15;
-                $tax = $subtotal * 0.08;
-                $promoDiscount = 0; // Your promo logic here
-                $grandTotal = $subtotal + $shipping + $tax - $promoDiscount;
+                $shipping = 0;
+
+                // --- NEW --- Calculate discount amount
+                $promoDiscountAmount = 0;
+                $promoCodeToStore = null;
+
+                $promoCodeModel = PromoCode::where('code', $validatedCustomerData['promo_code'])->first();
+
+                if ($promoCodeModel) {
+                    if ($promoCodeModel->type === 'percentage') {
+                        $promoDiscountAmount = ($subtotal * $promoCodeModel->value) / 100;
+                    } else { // 'fixed'
+                        $promoDiscountAmount = $promoCodeModel->value;
+                    }
+                    // Ensure discount doesn't exceed subtotal
+                    $promoDiscountAmount = min($subtotal, $promoDiscountAmount);
+                    $promoCodeToStore = $promoCodeModel->code;
+                }
+
+                // --- NEW --- Update grand total calculation
+                $grandTotal = ($subtotal + $shipping) - $promoDiscountAmount;
 
                 // Create the Order
                 $order = Order::create([
@@ -87,9 +109,9 @@ class OrderController extends Controller
                     'special_mark' => $validatedCustomerData['special_mark'] ?? null,
                     'subtotal' => $subtotal,
                     'shipping_cost' => $shipping,
-                    'tax_amount' => $tax,
-                    'promo_code' => $validatedCustomerData['promo_code'] ?? null,
-                    'promo_discount' => $promoDiscount,
+                    'tax_amount' => 0,
+                    'promo_code' => $promoCodeToStore,
+                    'promo_discount' => $promoDiscountAmount,
                     'grand_total' => $grandTotal,
                 ]);
 
@@ -111,6 +133,9 @@ class OrderController extends Controller
 
                 return $order;
             });
+
+            $settingsService = new SettingsService(); // Instantiate your service
+            Mail::to($order->email)->send(new OrderConfirmedMail($order, $settingsService));
 
             return response()->json([
                 'message' => 'Order placed successfully!',
