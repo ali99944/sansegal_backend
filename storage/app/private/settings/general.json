@@ -1,0 +1,10 @@
+{
+    "app_name": "San Segal",
+    "app_url": "https://sansegal.com",
+    "logo_url": "/assets/images/logo-dark.svg",
+    "favicon_url": "/favicon.ico",
+    "support_email": "support@sansegal.com",
+    "maintenance_mode": false,
+    "maintenance_message": "الموقع قيد الصيانة حاليًا وسيعود للعمل قريبًا. شكرًا لتفهمكم.",
+    "copyright_text": "© {year} San Segal. جميع الحقوق محفوظة."
+}

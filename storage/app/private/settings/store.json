@@ -1,0 +1,7 @@
+{
+    "tax_rate_percentage": 14,
+    "order_code_prefix": "SG-",
+    "cod_confirmation_message": "سيتم تأكيد طلبك عبر مكالمة هاتفية قبل عملية الشحن. الدفع نقدًا عند الاستلام.",
+    "checkout_terms_url": "/pages/terms-and-conditions",
+    "enable_promo_codes": true
+}
